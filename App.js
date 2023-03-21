@@ -3,22 +3,36 @@ import {
   StyleSheet,
   View,
   ScrollView,
+  FlatList,
   SafeAreaView,
   Text,
   Button,
   Image,
+  SliderBase,
 } from "react-native";
-import path from "path";
+
 // https://reactnative.dev/docs/navigation
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
-// https://www.youtube.com/watch?v=4WPjWK0MYMI
 import { Camera, CameraType } from "expo-camera";
 import * as MediaLibrary from "expo-media-library";
 
-// const SELFIE_QUEEN_PATH = "https://scotthallock-c0d3.onrender.com/selfie-queen";
-const SELFIE_QUEEN_PATH = "http://localhost:8123/selfie-queen";
+// CANNOT import path from "path";
+// It will result in this error when opening the app on a web browser:
+// Uncaught ReferenceError: process is not defined
+//    at ./node_modules/path/path.js (path.js:25:1)
+//    ...
+// See more about this issue:
+// https://github.com/facebook/create-react-app/issues/12212
+// There are a few solutions which require extra dependencies.
+// For simplicity, we elect to concatenate strings instead.
+
+const UPLOADS_PATH = "https://scotthallock-c0d3.onrender.com/selfie-queen/uploads/";
+const API_UPLOADS_PATH = "https://scotthallock-c0d3.onrender.com/selfie-queen/api/uploads/";
+
+// const UPLOADS_PATH = "http://localhost:8123/selfie-queen/uploads/";
+// const API_UPLOADS_PATH = "http://localhost:8123/selfie-queen/api/uploads/";
 
 const Stack = createNativeStackNavigator();
 
@@ -113,7 +127,7 @@ function TakeSelfieScreen({ navigation }) {
     });
 
     // iOS doesn't include "data:image/jpg;base64," but the web browser does.
-    if (!newPhoto.base64.startsWith("data:image/jpg;base64,") || !newPhoto.base64.startsWith("data:image/png;base64,")) {
+    if (!newPhoto.base64.startsWith("data:image/jpg;base64,") && !newPhoto.base64.startsWith("data:image/png;base64,")) {
       newPhoto.base64 = "data:image/png;base64," + newPhoto.base64;
     }
 
@@ -121,28 +135,22 @@ function TakeSelfieScreen({ navigation }) {
   };
 
   const postPhoto = () => {
-    console.log("posting photo....")
-
     const base64Data = photo.base64.replace(/^data:image\/png;base64,/, '');
-    // console.log({base64Data})
-    
-    fetch(path.join(SELFIE_QUEEN_PATH, "/api/uploads"), {
+    fetch(API_UPLOADS_PATH, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         selfie: base64Data,
-        emoji: "📱" // this is supposed to be react symbol emoji
+        emoji: "📱"
       })
     })
-      .then(res => res.json())
-      .then(body => {
-        if (body.error) console.error(body.error.message);
-        console.log(body); 
-      })
-      .catch(console.error);
-        
+      .catch(console.error)
+      .then(() => {
+        setPhoto(undefined);
+        navigation.navigate("View"); // take user to view
+      });
   };
 
   const savePhoto = () => {
@@ -182,7 +190,7 @@ function ViewSelfiesScreen({ navigation }) {
 
   useEffect(() => {
     (() => {
-      fetch(path.join(SELFIE_QUEEN_PATH, "/api/uploads"))
+      fetch(API_UPLOADS_PATH)
         .then((res) => res.json())
         .then((data) => setSelfies(data))
         .catch(console.error);
@@ -197,50 +205,42 @@ function ViewSelfiesScreen({ navigation }) {
     return <Text>No selfies posted yet!</Text>;
   }
 
-  const images = Object.keys(selfies);
-  const metadata = Object.values(selfies);
-
-  const selfieElements = images.map((_, i) => {
-    const sourcePath = path.join(SELFIE_QUEEN_PATH, "/uploads", images[i]);
-    return (
-      <View key={images[i]} style={styles.container}>
-        <Image
-          style={{
-            marginTop: 10,
-            borderRadius: 0,
-            resizeMode: "contain",
-            height: undefined,
-            width: "100%",
-            aspectRatio: 4/3,
-          }}
-          source={{ uri: sourcePath }}
-        />
-        <View style={{
-          flexDirection: "row",
-          alignContent: "space-between",
-          justifyContent: "center",
-          backgroundColor: "#ccc",
-         }}>
-          <Text style={{fontSize: 30, flex: 0.3,}}>
-            {metadata[i].emoji}
-          </Text>
-          <Text style={{fontSize: 20, flex: 0.7, textAlign: "right"}}>
-            {metadata[i].timestamp}
-          </Text>
-        </View>
-      </View>
-    );
-  });
-
   return (
-    <ScrollView
-      contentContainerStyle={styles.scrollContainer}
-    >
-      <View style={styles.allSelfies}>
-        {selfieElements}
-      </View>
-    </ScrollView>
-  );
+    <View>
+      <FlatList
+        data={Object.values(selfies).reverse()}
+        keyExtractor={({ id }) => id.toString()}
+        renderItem={({ item }) => (
+          <View style={styles.container}>
+            <Image
+              style={{
+                marginTop: 10,
+                borderRadius: 0,
+                resizeMode: "contain",
+                height: undefined,
+                width: "100%",
+                aspectRatio: 4/3,
+              }}
+              source={{ uri: UPLOADS_PATH + item.filename }}
+            />
+            <View style={{
+              flexDirection: "row",
+              alignContent: "space-between",
+              justifyContent: "center",
+              backgroundColor: "#ccc",
+            }}>
+              <Text style={{fontSize: 30, flex: 0.3,}}>
+                {item.emoji}
+              </Text>
+              <Text style={{fontSize: 20, flex: 0.7, textAlign: "right"}}>
+                {item.timestamp}
+              </Text>
+            </View>
+          </View>
+        )}
+      />
+    </View>
+  )
 }
 
 function AboutScreen({ navigation }) {
