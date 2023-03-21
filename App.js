@@ -97,13 +97,17 @@ function TakeSelfieScreen({ navigation }) {
   }
 
   const takePhoto = async () => {
-    let options = {
+    const newPhoto = await cameraRef.current.takePictureAsync({
       quality: 1,
       base64: true,
       exif: false
-    };
+    });
 
-    let newPhoto = await cameraRef.current.takePictureAsync(options);
+    // iOS doesn't include "data:image/jpg;base64," but the web browser does.
+    if (!newPhoto.base64.startsWith("data:image/jpg;base64,")) {
+      newPhoto.base64 = "data:image/jpg;base64," + newPhoto.base64;
+    }
+
     setPhoto(newPhoto);
   };
 
