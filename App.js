@@ -7,15 +7,16 @@ import {
   Button,
   Image,
 } from "react-native";
-
+import path from "path";
 // https://reactnative.dev/docs/navigation
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
-
 // https://www.youtube.com/watch?v=4WPjWK0MYMI
 import { Camera, CameraType } from "expo-camera";
 import * as MediaLibrary from "expo-media-library";
+
+const SELFIE_QUEEN_PATH = "https://scotthallock-c0d3.onrender.com/selfie-queen";
 
 const Stack = createNativeStackNavigator();
 
@@ -84,23 +85,28 @@ function TakeSelfieScreen({ navigation }) {
   useEffect(() => {
     (async () => {
       const cameraPermission = await Camera.requestCameraPermissionsAsync();
-      const mediaLibraryPermission = await MediaLibrary.requestPermissionsAsync();
+      const mediaLibraryPermission =
+        await MediaLibrary.requestPermissionsAsync();
       setHasCameraPermission(cameraPermission.status === "granted");
       setHasMediaLibraryPermission(mediaLibraryPermission.status === "granted");
     })();
   }, []);
 
   if (hasCameraPermission === undefined) {
-    return <Text>Requesting permissions...</Text>
+    return <Text>Requesting permissions...</Text>;
   } else if (!hasCameraPermission) {
-    return <Text>Permission for camera not granted. Please change this in settings.</Text>
+    return (
+      <Text>
+        Permission for camera not granted. Please change this in settings.
+      </Text>
+    );
   }
 
   const takePhoto = async () => {
     const newPhoto = await cameraRef.current.takePictureAsync({
       quality: 1,
       base64: true,
-      exif: false
+      exif: false,
     });
 
     // iOS doesn't include "data:image/jpg;base64," but the web browser does.
@@ -112,7 +118,9 @@ function TakeSelfieScreen({ navigation }) {
   };
 
   const flipCamera = () => {
-    setCameraType(cameraType === CameraType.front ? CameraType.back : CameraType.front);
+    setCameraType(
+      cameraType === CameraType.front ? CameraType.back : CameraType.front
+    );
   };
 
   const postPhoto = () => {
@@ -131,30 +139,72 @@ function TakeSelfieScreen({ navigation }) {
     return (
       <SafeAreaView style={styles.container}>
         <Text>Nice photo</Text>
-        <Image style={styles.preview} source={{ uri: "data:image/jpg;base64," + photo.base64 }} />
+        <Image
+          style={styles.preview}
+          source={{ uri: photo.base64 }}
+        />
         <Button title="Post" onPress={postPhoto} />
-        {hasMediaLibraryPermission ? <Button title="Save" onPress={savePhoto} /> : undefined}
+        {hasMediaLibraryPermission ? (
+          <Button title="Save" onPress={savePhoto} />
+        ) : undefined}
         <Button title="Discard" onPress={() => setPhoto(undefined)} />
       </SafeAreaView>
     );
   }
 
   return (
-    <Camera
-      ref={cameraRef}
-      type={cameraType}
-      style={styles.container}
-    >
+    <Camera ref={cameraRef} type={cameraType} style={styles.container}>
       <View style={styles.buttonContainer}>
         <Button title="Take Pic" onPress={takePhoto} />
-        <Button title="Flip Camera" onPress={flipCamera}/>
+        <Button title="Flip Camera" onPress={flipCamera} />
       </View>
     </Camera>
   );
 }
 
 function ViewSelfiesScreen({ navigation }) {
-  return <Text>View the selfies here</Text>;
+  const [selfies, setSelfies] = useState();
+
+  useEffect(() => {
+    (() => {
+      fetch(path.join(SELFIE_QUEEN_PATH, "/api/uploads"))
+        .then((res) => res.json())
+        .then((data) => setSelfies(data))
+        .catch(console.error);
+    })();
+  }, []);
+
+  if (!selfies) {
+    return <Text>Loading selfies...</Text>;
+  }
+
+  if (selfies.length === 0) {
+    return <Text>No selfies posted yet!</Text>;
+  }
+
+  const images = Object.keys(selfies);
+  const metadata = Object.values(selfies);
+
+  const selfieElements = images.map((_, i) => {
+    const sourcePath = path.join(SELFIE_QUEEN_PATH, "/uploads", images[i]);
+    return (
+      <View key={images[i]}>
+        <Image
+          style={{
+            borderRadius: 5,
+            resizeMode: "contain",
+            height: 100,
+            width: 200,
+          }}
+          source={{ uri: sourcePath }}
+        />
+        <Text>{metadata[i].emoji}</Text>
+        <Text>{metadata[i].timestamp}</Text>
+      </View>
+    );
+  });
+
+  return <View>{selfieElements}</View>;
 }
 
 function AboutScreen({ navigation }) {
@@ -164,17 +214,15 @@ function AboutScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   buttonContainer: {
-    backgroundColor: '#fff',
-    alignSelf: 'flex-end'
+    backgroundColor: "#fff",
+    alignSelf: "flex-end",
   },
   preview: {
-    alignSelf: 'stretch',
-    flex: 1
-  }
+    alignSelf: "stretch",
+    flex: 1,
+  },
 });
-
-
