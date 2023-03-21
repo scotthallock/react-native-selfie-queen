@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import {
   StyleSheet,
   View,
+  ScrollView,
   SafeAreaView,
   Text,
   Button,
@@ -16,7 +17,8 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Camera, CameraType } from "expo-camera";
 import * as MediaLibrary from "expo-media-library";
 
-const SELFIE_QUEEN_PATH = "https://scotthallock-c0d3.onrender.com/selfie-queen";
+// const SELFIE_QUEEN_PATH = "https://scotthallock-c0d3.onrender.com/selfie-queen";
+const SELFIE_QUEEN_PATH = "http://localhost:8123/selfie-queen";
 
 const Stack = createNativeStackNavigator();
 
@@ -79,7 +81,6 @@ function TakeSelfieScreen({ navigation }) {
   let cameraRef = useRef();
   const [hasCameraPermission, setHasCameraPermission] = useState();
   const [hasMediaLibraryPermission, setHasMediaLibraryPermission] = useState();
-  const [cameraType, setCameraType] = useState(CameraType.front);
   const [photo, setPhoto] = useState();
 
   useEffect(() => {
@@ -104,29 +105,44 @@ function TakeSelfieScreen({ navigation }) {
 
   const takePhoto = async () => {
     const newPhoto = await cameraRef.current.takePictureAsync({
+      width: 640,
+      height: 480,
       quality: 1,
       base64: true,
       exif: false,
     });
 
     // iOS doesn't include "data:image/jpg;base64," but the web browser does.
-    if (!newPhoto.base64.startsWith("data:image/jpg;base64,")) {
-      newPhoto.base64 = "data:image/jpg;base64," + newPhoto.base64;
+    if (!newPhoto.base64.startsWith("data:image/jpg;base64,") || !newPhoto.base64.startsWith("data:image/png;base64,")) {
+      newPhoto.base64 = "data:image/png;base64," + newPhoto.base64;
     }
 
     setPhoto(newPhoto);
   };
 
-  const flipCamera = () => {
-    setCameraType(
-      cameraType === CameraType.front ? CameraType.back : CameraType.front
-    );
-  };
-
   const postPhoto = () => {
-    // shareAsync(photo.uri).then(() => {
-    //   setPhoto(undefined);
-    // });
+    console.log("posting photo....")
+
+    const base64Data = photo.base64.replace(/^data:image\/png;base64,/, '');
+    // console.log({base64Data})
+    
+    fetch(path.join(SELFIE_QUEEN_PATH, "/api/uploads"), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        selfie: base64Data,
+        emoji: "📱" // this is supposed to be react symbol emoji
+      })
+    })
+      .then(res => res.json())
+      .then(body => {
+        if (body.error) console.error(body.error.message);
+        console.log(body); 
+      })
+      .catch(console.error);
+        
   };
 
   const savePhoto = () => {
@@ -153,10 +169,9 @@ function TakeSelfieScreen({ navigation }) {
   }
 
   return (
-    <Camera ref={cameraRef} type={cameraType} style={styles.container}>
+    <Camera ref={cameraRef} type={CameraType.front} style={styles.container}>
       <View style={styles.buttonContainer}>
         <Button title="Take Pic" onPress={takePhoto} />
-        <Button title="Flip Camera" onPress={flipCamera} />
       </View>
     </Camera>
   );
@@ -188,23 +203,44 @@ function ViewSelfiesScreen({ navigation }) {
   const selfieElements = images.map((_, i) => {
     const sourcePath = path.join(SELFIE_QUEEN_PATH, "/uploads", images[i]);
     return (
-      <View key={images[i]}>
+      <View key={images[i]} style={styles.container}>
         <Image
           style={{
-            borderRadius: 5,
+            marginTop: 10,
+            borderRadius: 0,
             resizeMode: "contain",
-            height: 100,
-            width: 200,
+            height: undefined,
+            width: "100%",
+            aspectRatio: 4/3,
           }}
           source={{ uri: sourcePath }}
         />
-        <Text>{metadata[i].emoji}</Text>
-        <Text>{metadata[i].timestamp}</Text>
+        <View style={{
+          flexDirection: "row",
+          alignContent: "space-between",
+          justifyContent: "center",
+          backgroundColor: "#ccc",
+         }}>
+          <Text style={{fontSize: 30, flex: 0.3,}}>
+            {metadata[i].emoji}
+          </Text>
+          <Text style={{fontSize: 20, flex: 0.7, textAlign: "right"}}>
+            {metadata[i].timestamp}
+          </Text>
+        </View>
       </View>
     );
   });
 
-  return <View>{selfieElements}</View>;
+  return (
+    <ScrollView
+      contentContainerStyle={styles.scrollContainer}
+    >
+      <View style={styles.allSelfies}>
+        {selfieElements}
+      </View>
+    </ScrollView>
+  );
 }
 
 function AboutScreen({ navigation }) {
@@ -217,6 +253,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  scrollContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
   buttonContainer: {
     backgroundColor: "#fff",
     alignSelf: "flex-end",
@@ -225,4 +265,9 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
     flex: 1,
   },
+  allSelfies: {
+    flex: 1,
+    alignItems: "center",
+    gap: 10,
+  }
 });
