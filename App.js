@@ -2,14 +2,12 @@ import { useEffect, useState, useRef } from "react";
 import {
   StyleSheet,
   View,
-  ScrollView,
   FlatList,
   SafeAreaView,
   Text,
   Button,
   Pressable,
   Image,
-  SliderBase,
 } from "react-native";
 
 // https://reactnative.dev/docs/navigation
@@ -50,7 +48,7 @@ export default function App() {
         <Stack.Screen
           name="Home"
           component={HomeScreen}
-          options={{ title: "Welcome to Selfie Queen" }}
+          options={{ title: "Selfie Queen" }}
         />
         <Stack.Screen
           name="Post"
@@ -75,27 +73,29 @@ export default function App() {
 function HomeScreen({ navigation }) {
   return (
     <View style={styles.container}>
+      <Text style={{fontSize: 100}}>👑</Text>
       <Pressable
-        style={styles.mainButton}
+        style={{...styles.mainButton, backgroundColor: "#581b98"}}
         title="Take a Selfie"
         onPressOut={() => navigation.navigate("Post")}
       >
-        <Text>Take a Selfie</Text>
+        <Text style={styles.mainButtonText}>Take a Selfie</Text>
       </Pressable>
       <Pressable
-        style={styles.mainButton}
+        style={{...styles.mainButton, backgroundColor: "#9c1de7"}}
         title="View Selfies"
         onPressOut={() => navigation.navigate("View")}
       >
-        <Text>View Selfies</Text>
+        <Text style={styles.mainButtonText}>View Selfies</Text>
       </Pressable>
       <Pressable
-        style={styles.mainButton}
+        style={{...styles.mainButton, backgroundColor: "#f3558e"}}
         title="About"
         onPressOut={() => navigation.navigate("About")}
       >
-        <Text>About</Text>
+        <Text style={styles.mainButtonText}>About</Text>
       </Pressable>
+      <Text style={{fontSize: 100}}>🤳</Text>
     </View>
   );
 }
@@ -268,11 +268,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     margin: 10,
     padding: 20,
-    width: "100%",
+    width: "90%",
+    borderRadius: 10,
     backgroundColor: "blue",
     color: "white",
     borderColor: "#fff",
   },
+  mainButtonText: {
+    color: "white",
+    fontSize: 30,
+  },  
   buttonContainer: {
     backgroundColor: "#fff",
     alignSelf: "flex-end",
