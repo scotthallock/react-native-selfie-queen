@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   Text,
   Button,
+  Pressable,
   Image,
   SliderBase,
 } from "react-native";
@@ -18,6 +19,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Camera, CameraType } from "expo-camera";
 import * as MediaLibrary from "expo-media-library";
 
+// ---------------------------------------------------------------------
 // CANNOT import path from "path";
 // It will result in this error when opening the app on a web browser:
 // Uncaught ReferenceError: process is not defined
@@ -26,7 +28,8 @@ import * as MediaLibrary from "expo-media-library";
 // See more about this issue:
 // https://github.com/facebook/create-react-app/issues/12212
 // There are a few solutions which require extra dependencies.
-// For simplicity, we elect to concatenate strings instead.
+// But, for simplicity, we elect to concatenate strings instead.
+// ---------------------------------------------------------------------
 
 const UPLOADS_PATH = "https://scotthallock-c0d3.onrender.com/selfie-queen/uploads/";
 const API_UPLOADS_PATH = "https://scotthallock-c0d3.onrender.com/selfie-queen/api/uploads/";
@@ -67,27 +70,29 @@ export default function App() {
 
 function HomeScreen({ navigation }) {
   return (
-    <>
-      <Text>This is the home screen</Text>
-      <Button
+    <View style={styles.container}>
+      <Pressable
+        style={styles.mainButton}
         title="Take a Selfie"
-        onPress={() => {
-          navigation.navigate("Post");
-        }}
-      />
-      <Button
+        onPressOut={() => navigation.navigate("Post")}
+      >
+        <Text>Take a Selfie</Text>
+      </Pressable>
+      <Pressable
+        style={styles.mainButton}
         title="View Selfies"
-        onPress={() => {
-          navigation.navigate("View");
-        }}
-      />
-      <Button
+        onPressOut={() => navigation.navigate("View")}
+      >
+        <Text>View Selfies</Text>
+      </Pressable>
+      <Pressable
+        style={styles.mainButton}
         title="About"
-        onPress={() => {
-          navigation.navigate("About");
-        }}
-      />
-    </>
+        onPressOut={() => navigation.navigate("About")}
+      >
+        <Text>About</Text>
+      </Pressable>
+    </View>
   );
 }
 
@@ -253,9 +258,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  scrollContainer: {
-    alignItems: "center",
+  mainButton: {
+    display: "flex",
     justifyContent: "center",
+    alignItems: "center",
+    margin: 10,
+    padding: 20,
+    width: "100%",
+    backgroundColor: "blue",
+    color: "white",
+    borderColor: "#fff",
   },
   buttonContainer: {
     backgroundColor: "#fff",
