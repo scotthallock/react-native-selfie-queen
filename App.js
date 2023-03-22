@@ -19,6 +19,10 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Camera, CameraType } from "expo-camera";
 import * as MediaLibrary from "expo-media-library";
 
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+dayjs.extend(relativeTime);
+
 // ---------------------------------------------------------------------
 // CANNOT import path from "path";
 // It will result in this error when opening the app on a web browser:
@@ -238,7 +242,7 @@ function ViewSelfiesScreen({ navigation }) {
                 {item.emoji}
               </Text>
               <Text style={{fontSize: 20, flex: 0.7, textAlign: "right"}}>
-                {item.timestamp}
+                {dayjs().to(dayjs(item.timestamp))}
               </Text>
             </View>
           </View>
