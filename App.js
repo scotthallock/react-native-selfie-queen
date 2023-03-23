@@ -3,11 +3,12 @@ import {
   StyleSheet,
   View,
   FlatList,
-  SafeAreaView,
+  Dimensions,
   Text,
-  Button,
+  Linking,
   Pressable,
   Image,
+  ImageBackground,
 } from "react-native";
 
 // https://reactnative.dev/docs/navigation
@@ -15,10 +16,9 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import { Camera, CameraType } from "expo-camera";
-import * as MediaLibrary from "expo-media-library";
 
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(relativeTime);
 
 // ---------------------------------------------------------------------
@@ -33,8 +33,10 @@ dayjs.extend(relativeTime);
 // But, for simplicity, we elect to concatenate strings instead.
 // ---------------------------------------------------------------------
 
-const UPLOADS_PATH = "https://scotthallock-c0d3.onrender.com/selfie-queen/uploads/";
-const API_UPLOADS_PATH = "https://scotthallock-c0d3.onrender.com/selfie-queen/api/uploads/";
+const UPLOADS_PATH =
+  "https://scotthallock-c0d3.onrender.com/selfie-queen/uploads/";
+const API_UPLOADS_PATH =
+  "https://scotthallock-c0d3.onrender.com/selfie-queen/api/uploads/";
 
 // const UPLOADS_PATH = "http://localhost:8123/selfie-queen/uploads/";
 // const API_UPLOADS_PATH = "http://localhost:8123/selfie-queen/api/uploads/";
@@ -48,7 +50,7 @@ export default function App() {
         <Stack.Screen
           name="Home"
           component={HomeScreen}
-          options={{ title: "Selfie Queen" }}
+          options={{ title: "Home" }}
         />
         <Stack.Screen
           name="Post"
@@ -73,29 +75,29 @@ export default function App() {
 function HomeScreen({ navigation }) {
   return (
     <View style={styles.container}>
-      <Text style={{fontSize: 100}}>👑</Text>
+      <Text style={{ fontSize: 100 }}>👑</Text>
       <Pressable
-        style={{...styles.mainButton, backgroundColor: "#581b98"}}
+        style={{ ...styles.button, width: "90%", backgroundColor: "#581b98" }}
         title="Take a Selfie"
         onPressOut={() => navigation.navigate("Post")}
       >
-        <Text style={styles.mainButtonText}>Take a Selfie</Text>
+        <Text style={styles.buttonText}>Take a Selfie</Text>
       </Pressable>
       <Pressable
-        style={{...styles.mainButton, backgroundColor: "#9c1de7"}}
+        style={{ ...styles.button, width: "90%", backgroundColor: "#9c1de7" }}
         title="View Selfies"
         onPressOut={() => navigation.navigate("View")}
       >
-        <Text style={styles.mainButtonText}>View Selfies</Text>
+        <Text style={styles.buttonText}>View Selfies</Text>
       </Pressable>
       <Pressable
-        style={{...styles.mainButton, backgroundColor: "#f3558e"}}
+        style={{ ...styles.button, width: "90%", backgroundColor: "#f3558e" }}
         title="About"
         onPressOut={() => navigation.navigate("About")}
       >
-        <Text style={styles.mainButtonText}>About</Text>
+        <Text style={styles.buttonText}>About</Text>
       </Pressable>
-      <Text style={{fontSize: 100}}>🤳</Text>
+      <Text style={{ fontSize: 100 }}>🤳</Text>
     </View>
   );
 }
@@ -103,16 +105,12 @@ function HomeScreen({ navigation }) {
 function TakeSelfieScreen({ navigation }) {
   let cameraRef = useRef();
   const [hasCameraPermission, setHasCameraPermission] = useState();
-  const [hasMediaLibraryPermission, setHasMediaLibraryPermission] = useState();
   const [photo, setPhoto] = useState();
 
   useEffect(() => {
     (async () => {
       const cameraPermission = await Camera.requestCameraPermissionsAsync();
-      const mediaLibraryPermission =
-        await MediaLibrary.requestPermissionsAsync();
       setHasCameraPermission(cameraPermission.status === "granted");
-      setHasMediaLibraryPermission(mediaLibraryPermission.status === "granted");
     })();
   }, []);
 
@@ -133,10 +131,14 @@ function TakeSelfieScreen({ navigation }) {
       quality: 1,
       base64: true,
       exif: false,
+      skipProcessing: true,
     });
 
     // iOS doesn't include "data:image/jpg;base64," but the web browser does.
-    if (!newPhoto.base64.startsWith("data:image/jpg;base64,") && !newPhoto.base64.startsWith("data:image/png;base64,")) {
+    if (
+      !newPhoto.base64.startsWith("data:image/jpg;base64,") &&
+      !newPhoto.base64.startsWith("data:image/png;base64,")
+    ) {
       newPhoto.base64 = "data:image/png;base64," + newPhoto.base64;
     }
 
@@ -144,51 +146,78 @@ function TakeSelfieScreen({ navigation }) {
   };
 
   const postPhoto = () => {
-    const base64Data = photo.base64.replace(/^data:image\/png;base64,/, '');
+    const base64Data = photo.base64.replace(/^data:image\/png;base64,/, "");
     fetch(API_UPLOADS_PATH, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         selfie: base64Data,
-        emoji: "📱"
-      })
+        emoji: "📱",
+      }),
     })
       .catch(console.error)
       .then(() => {
         setPhoto(undefined);
-        navigation.navigate("View"); // take user to view
+        navigation.navigate("View");
       });
-  };
-
-  const savePhoto = () => {
-    MediaLibrary.saveToLibraryAsync(photo.uri).then(() => {
-      setPhoto(undefined);
-    });
   };
 
   if (photo) {
     return (
-      <SafeAreaView style={styles.container}>
-        <Text>Nice photo</Text>
-        <Image
-          style={styles.preview}
-          source={{ uri: photo.base64 }}
-        />
-        <Button title="Post" onPress={postPhoto} />
-        {hasMediaLibraryPermission ? (
-          <Button title="Save" onPress={savePhoto} />
-        ) : undefined}
-        <Button title="Discard" onPress={() => setPhoto(undefined)} />
-      </SafeAreaView>
+      <View style={styles.container}>
+        <ImageBackground style={styles.preview} source={{ uri: photo.base64 }}>
+          <View
+            style={{
+              flex: 1,
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <Text
+              style={{
+                backgroundColor: "black",
+                color: "white",
+                fontSize: 20,
+                margin: 10,
+              }}
+            >
+              Looking good!
+            </Text>
+            <View
+              style={{ flexDirection: "row", justifyContent: "space-between" }}
+            >
+              <Pressable
+                style={{ ...styles.button, flex: 0.4 }}
+                onPressOut={() => setPhoto(undefined)}
+              >
+                <Text style={styles.buttonText}>Discard</Text>
+              </Pressable>
+              <Pressable
+                style={{ ...styles.button, flex: 0.4 }}
+                onPressOut={postPhoto}
+              >
+                <Text style={styles.buttonText}>Post</Text>
+              </Pressable>
+            </View>
+          </View>
+        </ImageBackground>
+      </View>
     );
   }
 
   return (
-    <Camera ref={cameraRef} type={CameraType.front} style={styles.container}>
-      <View style={styles.buttonContainer}>
-        <Button title="Take Pic" onPress={takePhoto} />
+    <Camera
+      ref={cameraRef}
+      type={CameraType.front}
+      style={{ ...styles.container, flexDirection: "column" }}
+    >
+      <View style={{ height: "100%", justifyContent: "flex-end" }}>
+        <Pressable style={styles.button} onPressOut={takePhoto}>
+          <Text style={styles.buttonText}>Take Photo</Text>
+        </Pressable>
       </View>
     </Camera>
   );
@@ -207,53 +236,80 @@ function ViewSelfiesScreen({ navigation }) {
   }, []);
 
   if (!selfies) {
-    return <Text>Loading selfies...</Text>;
+    return (
+      <View style={styles.container}>
+        <Text style={{ color: "#9c1de7", fontSize: 20 }}>
+          Loading selfies...
+        </Text>
+      </View>
+    );
   }
 
   if (selfies.length === 0) {
-    return <Text>No selfies posted yet!</Text>;
+    return (
+      <View style={styles.container}>
+        <Text style={{ color: "#9c1de7", fontSize: 20 }}>
+          No selfies posted yet!
+        </Text>
+      </View>
+    );
   }
+
+  renderSeparator = () => (
+    <View style={{ backgroundColor: "gray", height: 1, margin: "2.5%" }} />
+  );
 
   return (
     <View>
       <FlatList
         data={Object.values(selfies).reverse()}
         keyExtractor={({ id }) => id.toString()}
+        ItemSeparatorComponent={this.renderSeparator}
         renderItem={({ item }) => (
           <View style={styles.container}>
             <Image
-              style={{
-                marginTop: 10,
-                borderRadius: 0,
-                resizeMode: "contain",
-                height: undefined,
-                width: "100%",
-                aspectRatio: 4/3,
-              }}
+              style={styles.selfie}
               source={{ uri: UPLOADS_PATH + item.filename }}
             />
-            <View style={{
-              flexDirection: "row",
-              alignContent: "space-between",
-              justifyContent: "center",
-              backgroundColor: "#ccc",
-            }}>
-              <Text style={{fontSize: 30, flex: 0.3,}}>
-                {item.emoji}
-              </Text>
-              <Text style={{fontSize: 20, flex: 0.7, textAlign: "right"}}>
-                {dayjs().to(dayjs(item.timestamp))}
-              </Text>
-            </View>
+            <Text style={{ fontSize: 20 }}>
+              {dayjs().to(dayjs(item.timestamp))}
+            </Text>
+            <Text style={{ fontSize: 30 }}>{item.emoji}</Text>
           </View>
         )}
       />
     </View>
-  )
+  );
 }
 
 function AboutScreen({ navigation }) {
-  return <Text>This is the About page</Text>;
+  return (
+    <View style={{ flex: 1 }}>
+      <Text style={styles.aboutText}>
+        This UI was built with React Native. The web version of this app can be
+        found at:
+      </Text>
+      <Text
+        style={{ ...styles.aboutText, color: "blue" }}
+        onPress={() =>
+          Linking.openURL("https://scotthallock-c0d3.onrender.com/selfie-queen")
+        }
+      >
+        https://scotthallock-c0d3.onrender.com/selfie-queen
+      </Text>
+      <Text style={styles.aboutText}>The code can be found at:</Text>
+      <Text
+        style={{ ...styles.aboutText, color: "blue" }}
+        onPress={() =>
+          Linking.openURL(
+            "https://github.com/scotthallock/react-native-selfie-queen"
+          )
+        }
+      >
+        https://github.com/scotthallock/react-native-selfie-queen
+      </Text>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -262,33 +318,47 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  mainButton: {
+  button: {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
     margin: 10,
     padding: 20,
-    width: "90%",
     borderRadius: 10,
     backgroundColor: "blue",
     color: "white",
-    borderColor: "#fff",
   },
-  mainButtonText: {
+  cameraButton: {
+    opacity: 0.5,
+  },
+  buttonText: {
     color: "white",
     fontSize: 30,
-  },  
+  },
   buttonContainer: {
     backgroundColor: "#fff",
     alignSelf: "flex-end",
   },
   preview: {
-    alignSelf: "stretch",
     flex: 1,
+    alignSelf: "stretch",
   },
   allSelfies: {
     flex: 1,
     alignItems: "center",
     gap: 10,
-  }
+  },
+  selfie: {
+    marginTop: 10,
+    borderRadius: 0,
+    resizeMode: "contain",
+    height: undefined,
+    width: "95%",
+    aspectRatio: 4 / 3,
+  },
+  aboutText: {
+    fontSize: 16,
+    padding: 16,
+    paddingBottom: 0,
+  },
 });
