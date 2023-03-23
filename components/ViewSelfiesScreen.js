@@ -1,14 +1,15 @@
-import { View, Text, Image, FlatList } from "react-native";
-import { useState, useEffect } from "react";
-import { API_UPLOADS_PATH, UPLOADS_PATH } from "./constants.js";
-import styles from "./styles.js";
+import { View, Text, Pressable, Image, FlatList } from 'react-native';
+import { useState, useEffect } from 'react';
+import { API_UPLOADS_PATH, UPLOADS_PATH } from './constants';
+import styles from './styles';
 
-import dayjs from "dayjs";
-import relativeTime from "dayjs/plugin/relativeTime";
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
 dayjs.extend(relativeTime);
 
 export default function ViewSelfiesScreen() {
   const [selfies, setSelfies] = useState();
+  const [selectedSelfie, setSelectedSelfie] = useState();
 
   useEffect(() => {
     (() => {
@@ -19,48 +20,60 @@ export default function ViewSelfiesScreen() {
     })();
   }, []);
 
+  if (selectedSelfie) {
+    return (
+      <Pressable style={{ flex: 1 }} onPress={() => setSelectedSelfie(null)}>
+        <View style={styles.imageContainer}>
+          <Image style={styles.containedImage} source={selectedSelfie} />
+        </View>
+      </Pressable>
+    );
+  }
+
   if (!selfies) {
     return (
-      <View style={styles.container}>
-        <Text style={{ fontSize: 20 }}>
-          Loading selfies...
-        </Text>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.message}>Loading selfies...</Text>
       </View>
     );
   }
 
-  if (selfies.length === 0) {
+  if (Object.keys(selfies).length === 0) {
     return (
-      <View style={styles.container}>
-        <Text style={{ fontSize: 20 }}>
-          No selfies posted yet!
-        </Text>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.message}>No selfies posted yet!</Text>
       </View>
     );
   }
 
   renderSeparator = () => (
-    <View style={{ backgroundColor: "gray", height: 1, margin: "2.5%" }} />
+    <View style={{ backgroundColor: 'gray', height: 1, margin: '2.5%' }} />
   );
 
+  renderSelfie = ({ item }) => {
+    const uri = new URL(item.filename, UPLOADS_PATH).href;
+    const source = { uri };
+    return (
+      <Pressable
+        onPress={() => setSelectedSelfie(source)}>
+        <View style={styles.container}>
+          <Image style={styles.selfie} source={source} />
+          <Text style={{ fontSize: 20 }}>
+            {dayjs().to(dayjs(item.timestamp))}
+          </Text>
+          <Text style={{ fontSize: 30 }}>{item.emoji}</Text>
+        </View>
+      </Pressable>
+    );
+  };
+
   return (
-    <View style={styles.container}>
+    <View style={{ width: '100%' }}>
       <FlatList
         data={Object.values(selfies).reverse()}
         keyExtractor={({ id }) => id.toString()}
+        renderItem={({ item }) => renderSelfie({ item })}
         ItemSeparatorComponent={this.renderSeparator}
-        renderItem={({ item }) => (
-          <View style={styles.container}>
-            <Image
-              style={styles.selfie}
-              source={{ uri: UPLOADS_PATH + item.filename }}
-            />
-            <Text style={{ fontSize: 20 }}>
-              {dayjs().to(dayjs(item.timestamp))}
-            </Text>
-            <Text style={{ fontSize: 30 }}>{item.emoji}</Text>
-          </View>
-        )}
       />
     </View>
   );
