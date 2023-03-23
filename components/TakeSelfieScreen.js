@@ -36,11 +36,8 @@ export default function TakeSelfieScreen({ navigation }) {
       skipProcessing: true,
     });
 
-    // iOS doesn't include "data:image/jpg;base64," but the web browser does.
-    if (
-      !newPhoto.base64.startsWith("data:image/jpg;base64,") &&
-      !newPhoto.base64.startsWith("data:image/png;base64,")
-    ) {
+    // iOS doesn't include "data:image/png;base64," but the web browser does.
+    if (!/^data:image\/(jpg|png);base64,/.test(newPhoto.base64)) {
       newPhoto.base64 = "data:image/png;base64," + newPhoto.base64;
     }
 
@@ -48,7 +45,7 @@ export default function TakeSelfieScreen({ navigation }) {
   };
 
   const postPhoto = () => {
-    const base64Data = photo.base64.replace(/^data:image\/png;base64,/, "");
+    const base64Data = photo.base64.replace(/^data:image\/(jpg|png);base64,/, "");
     fetch(API_UPLOADS_PATH, {
       method: "POST",
       headers: {
@@ -74,20 +71,9 @@ export default function TakeSelfieScreen({ navigation }) {
             style={{
               flex: 1,
               flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "space-between",
+              justifyContent: "flex-end"
             }}
           >
-            <Text
-              style={{
-                backgroundColor: "black",
-                color: "white",
-                fontSize: 20,
-                margin: 10,
-              }}
-            >
-              Looking good!
-            </Text>
             <View
               style={{ flexDirection: "row", justifyContent: "space-between" }}
             >
@@ -116,7 +102,7 @@ export default function TakeSelfieScreen({ navigation }) {
       type={CameraType.front}
       style={{ ...styles.container, flexDirection: "column" }}
     >
-      <View style={{ height: "100%", justifyContent: "flex-end" }}>
+      <View style={{ flex: 1, justifyContent: "flex-end" }}>
         <Pressable style={styles.button} onPressOut={takePhoto}>
           <Text style={styles.buttonText}>Take Photo</Text>
         </Pressable>

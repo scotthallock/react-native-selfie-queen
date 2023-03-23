@@ -3,8 +3,8 @@ import styles from "./styles.js";
 
 export default function HomeScreen({ navigation }) {
   return (
-    <View style={styles.container}>
-      <Text style={{ fontSize: 100 }}>👑</Text>
+    <View style={{flex: 1, alignItems: "center"}}>
+      <Text style={{ marginTop: 40, fontSize: 100 }}>🤳 👑</Text>
       <Pressable
         style={{ ...styles.button, width: "90%", backgroundColor: "#581b98" }}
         title="Take a Selfie"
@@ -26,7 +26,6 @@ export default function HomeScreen({ navigation }) {
       >
         <Text style={styles.buttonText}>About</Text>
       </Pressable>
-      <Text style={{ fontSize: 100 }}>🤳</Text>
     </View>
   );
 }

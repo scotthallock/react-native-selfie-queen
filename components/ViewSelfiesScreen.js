@@ -22,7 +22,7 @@ export default function ViewSelfiesScreen() {
   if (!selfies) {
     return (
       <View style={styles.container}>
-        <Text style={{ color: "#9c1de7", fontSize: 20 }}>
+        <Text style={{ fontSize: 20 }}>
           Loading selfies...
         </Text>
       </View>
@@ -32,7 +32,7 @@ export default function ViewSelfiesScreen() {
   if (selfies.length === 0) {
     return (
       <View style={styles.container}>
-        <Text style={{ color: "#9c1de7", fontSize: 20 }}>
+        <Text style={{ fontSize: 20 }}>
           No selfies posted yet!
         </Text>
       </View>
@@ -44,7 +44,7 @@ export default function ViewSelfiesScreen() {
   );
 
   return (
-    <View>
+    <View style={styles.container}>
       <FlatList
         data={Object.values(selfies).reverse()}
         keyExtractor={({ id }) => id.toString()}
