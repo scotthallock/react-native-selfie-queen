@@ -9,7 +9,7 @@ export default function AboutScreen() {
         can be found at:
       </Text>
       <Text
-        style={{ ...styles.aboutText, color: 'blue' }}
+        style={{ ...styles.aboutText, color: 'blue', textDecorationLine: 'underline' }}
         onPress={() =>
           Linking.openURL('https://scotthallock-c0d3.onrender.com/selfie-queen')
         }>
@@ -17,7 +17,7 @@ export default function AboutScreen() {
       </Text>
       <Text style={styles.aboutText}>The code can be found at:</Text>
       <Text
-        style={{ ...styles.aboutText, color: 'blue' }}
+        style={{ ...styles.aboutText, color: 'blue', textDecorationLine: 'underline' }}
         onPress={() =>
           Linking.openURL(
             'https://snack.expo.dev/@scotthallock/react-native-selfie-queen'

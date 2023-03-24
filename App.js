@@ -1,11 +1,11 @@
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-const Stack = createNativeStackNavigator();
+import HomeScreen from "./components/HomeScreen";
+import TakeSelfieScreen from "./components/TakeSelfieScreen";
+import ViewSelfiesScreen from "./components/ViewSelfiesScreen";
+import AboutScreen from "./components/AboutScreen";
 
-import HomeScreen from "./components/HomeScreen.js";
-import TakeSelfieScreen from "./components/TakeSelfieScreen.js";
-import ViewSelfiesScreen from "./components/ViewSelfiesScreen.js";
-import AboutScreen from "./components/AboutScreen.js";
+const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (

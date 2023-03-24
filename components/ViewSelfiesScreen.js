@@ -1,80 +1,143 @@
-import { View, Text, Pressable, Image, FlatList } from 'react-native';
-import { useState, useEffect } from 'react';
-import { API_UPLOADS_PATH, UPLOADS_PATH } from './constants';
+import { View, Pressable, Text, Image } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
+import { Camera, CameraType } from 'expo-camera';
+import { API_UPLOADS_PATH } from './constants';
 import styles from './styles';
 
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-dayjs.extend(relativeTime);
+const status = {
+  permissionPending: 'pending',
+  permissionGranted: 'granted',
+  permissionDenied: 'denied',
+  ready: 'ready',
+};
 
-export default function ViewSelfiesScreen() {
-  const [selfies, setSelfies] = useState();
-  const [selectedSelfie, setSelectedSelfie] = useState();
+export default function TakeSelfieScreen({ navigation }) {
+  const cameraRef = useRef();
+  const [cameraStatus, setCameraStatus] = useState(status.permissionPending);
+  const [photo, setPhoto] = useState();
 
   useEffect(() => {
-    (() => {
-      fetch(API_UPLOADS_PATH)
-        .then((res) => res.json())
-        .then((data) => setSelfies(data))
-        .catch(console.error);
+    (async () => {
+      const permission = await Camera.requestCameraPermissionsAsync();
+      if (permission.granted) {
+        setCameraStatus(status.permissionGranted);
+      } else {
+        setCameraStatus(status.permissionDenied);
+      }
     })();
   }, []);
 
-  if (selectedSelfie) {
-    return (
-      <Pressable style={{ flex: 1 }} onPress={() => setSelectedSelfie(null)}>
-        <View style={styles.imageContainer}>
-          <Image style={styles.containedImage} source={selectedSelfie} />
-        </View>
-      </Pressable>
-    );
-  }
-
-  if (!selfies) {
+  if (cameraStatus === status.permissionPending) {
     return (
       <View style={{ flex: 1 }}>
-        <Text style={styles.message}>Loading selfies...</Text>
+        <Text style={styles.message}>Requesting camera permissions...</Text>
       </View>
     );
   }
 
-  if (Object.keys(selfies).length === 0) {
+  if (cameraStatus === status.permissionDenied) {
     return (
       <View style={{ flex: 1 }}>
-        <Text style={styles.message}>No selfies posted yet!</Text>
+        <Text style={styles.message}>
+          Permission for camera not granted. Please change this in settings.
+        </Text>
       </View>
     );
   }
 
-  renderSeparator = () => (
-    <View style={{ backgroundColor: 'gray', height: 1, margin: '2.5%' }} />
-  );
-
-  renderSelfie = ({ item }) => {
-    const uri = new URL(item.filename, UPLOADS_PATH).href;
-    const source = { uri };
-    return (
-      <Pressable
-        onPress={() => setSelectedSelfie(source)}>
-        <View style={styles.container}>
-          <Image style={styles.selfie} source={source} />
-          <Text style={{ fontSize: 20 }}>
-            {dayjs().to(dayjs(item.timestamp))}
-          </Text>
-          <Text style={{ fontSize: 30 }}>{item.emoji}</Text>
-        </View>
-      </Pressable>
-    );
+  const onCameraReady = () => {
+    setCameraStatus(status.ready);
   };
 
+  const takePhoto = async () => {
+    if (cameraStatus !== status.ready) {
+      return console.log('Camera is not ready yet.');
+    }
+    const newPhoto = await cameraRef.current.takePictureAsync({
+      width: 640,
+      height: 480,
+      quality: 1,
+      base64: true,
+      exif: false,
+    });
+    // iOS doesn't include "data:image/png;base64," but the web browser does.
+    if (!/^data:image\/(jpg|png);base64,/.test(newPhoto.base64)) {
+      newPhoto.base64 = 'data:image/png;base64,' + newPhoto.base64;
+    }
+    setPhoto(newPhoto);
+  };
+
+  const postPhoto = () => {
+    const base64Data = photo.base64.replace(
+      /^data:image\/(jpg|png);base64,/,
+      ''
+    );
+
+    fetch(API_UPLOADS_PATH, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        selfie: base64Data,
+        emoji: '📱',
+      }),
+    })
+      .catch(console.error)
+      .then(() => {
+        setPhoto(undefined);
+        navigation.navigate('View');
+      });
+  };
+
+  if (photo) {
+    return (
+      <View style={styles.imageContainer}>
+        <Image style={styles.containedImage} source={{ uri: photo.base64 }} />
+        <View style={styles.cameraButtonContainer}>
+          <View style={styles.cameraButtonWrapper}>
+            <Pressable
+              style={({ pressed }) => [
+                { backgroundColor: pressed ? '#a467e4' : '#581b98' },
+                { ...styles.button, flex: 0.4, opacity: 0.7 },
+              ]}
+              onPress={() => setPhoto(undefined)}>
+              <Text style={styles.buttonText}>Discard</Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [
+                { backgroundColor: pressed ? '#a467e4' : '#581b98' },
+                { ...styles.button, flex: 0.4, opacity: 0.7 },
+              ]}
+              onPress={postPhoto}>
+              <Text style={styles.buttonText}>Post</Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
   return (
-    <View style={{ width: '100%' }}>
-      <FlatList
-        data={Object.values(selfies).reverse()}
-        keyExtractor={({ id }) => id.toString()}
-        renderItem={({ item }) => renderSelfie({ item })}
-        ItemSeparatorComponent={this.renderSeparator}
+    <View style={styles.imageContainer}>
+      <Camera
+        ref={cameraRef}
+        type={CameraType.front}
+        onCameraReady={onCameraReady}
+        style={styles.containedImage}
       />
+      <View style={styles.cameraButtonContainer}>
+        <View style={styles.cameraButtonWrapper}>
+          <Pressable
+            style={({ pressed }) => [
+              { backgroundColor: pressed ? '#a467e4' : '#581b98' },
+              { ...styles.button, opacity: 0.7 },
+            ]}
+            onPressOut={takePhoto}>
+            <Text style={styles.buttonText}>Take Photo</Text>
+          </Pressable>
+        </View>
+      </View>
     </View>
   );
 }

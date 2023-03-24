@@ -4,25 +4,38 @@ import { Camera, CameraType } from 'expo-camera';
 import { API_UPLOADS_PATH } from './constants';
 import styles from './styles';
 
+const status = {
+  permissionPending: 'pending',
+  permissionGranted: 'granted',
+  permissionDenied: 'denied',
+  ready: 'ready',
+};
+
 export default function TakeSelfieScreen({ navigation }) {
-  let cameraRef = useRef();
-  const [hasCameraPermission, setHasCameraPermission] = useState();
+  const cameraRef = useRef();
+  const [cameraStatus, setCameraStatus] = useState(status.permissionPending);
   const [photo, setPhoto] = useState();
 
   useEffect(() => {
     (async () => {
-      const cameraPermission = await Camera.requestCameraPermissionsAsync();
-      setHasCameraPermission(cameraPermission.status === 'granted');
+      const permission = await Camera.requestCameraPermissionsAsync();
+      if (permission.granted) {
+        setCameraStatus(status.permissionGranted);
+      } else {
+        setCameraStatus(status.permissionDenied);
+      }
     })();
   }, []);
 
-  if (hasCameraPermission === undefined) {
+  if (cameraStatus === status.permissionPending) {
     return (
       <View style={{ flex: 1 }}>
         <Text style={styles.message}>Requesting camera permissions...</Text>
       </View>
     );
-  } else if (!hasCameraPermission) {
+  }
+
+  if (cameraStatus === status.permissionDenied) {
     return (
       <View style={{ flex: 1 }}>
         <Text style={styles.message}>
@@ -32,7 +45,14 @@ export default function TakeSelfieScreen({ navigation }) {
     );
   }
 
+  const onCameraReady = () => {
+    setCameraStatus(status.ready);
+  };
+
   const takePhoto = async () => {
+    if (cameraStatus !== status.ready) {
+      return console.log('Camera is not ready yet.');
+    }
     const newPhoto = await cameraRef.current.takePictureAsync({
       width: 640,
       height: 480,
@@ -77,13 +97,19 @@ export default function TakeSelfieScreen({ navigation }) {
         <View style={styles.cameraButtonContainer}>
           <View style={styles.cameraButtonWrapper}>
             <Pressable
-              style={{ ...styles.button, flex: 0.4, opacity: 0.7 }}
-              onPressOut={() => setPhoto(undefined)}>
+              style={({ pressed }) => [
+                { backgroundColor: pressed ? '#a467e4' : '#581b98' },
+                { ...styles.button, flex: 0.4, opacity: 0.7 },
+              ]}
+              onPress={() => setPhoto(undefined)}>
               <Text style={styles.buttonText}>Discard</Text>
             </Pressable>
             <Pressable
-              style={{ ...styles.button, flex: 0.4, opacity: 0.7 }}
-              onPressOut={postPhoto}>
+              style={({ pressed }) => [
+                { backgroundColor: pressed ? '#a467e4' : '#581b98' },
+                { ...styles.button, flex: 0.4, opacity: 0.7 },
+              ]}
+              onPress={postPhoto}>
               <Text style={styles.buttonText}>Post</Text>
             </Pressable>
           </View>
@@ -97,12 +123,16 @@ export default function TakeSelfieScreen({ navigation }) {
       <Camera
         ref={cameraRef}
         type={CameraType.front}
+        onCameraReady={onCameraReady}
         style={styles.containedImage}
       />
       <View style={styles.cameraButtonContainer}>
         <View style={styles.cameraButtonWrapper}>
           <Pressable
-            style={{ ...styles.button, opacity: 0.7 }}
+            style={({ pressed }) => [
+              { backgroundColor: pressed ? '#a467e4' : '#581b98' },
+              { ...styles.button, opacity: 0.7 },
+            ]}
             onPressOut={takePhoto}>
             <Text style={styles.buttonText}>Take Photo</Text>
           </Pressable>

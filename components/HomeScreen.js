@@ -6,21 +6,30 @@ export default function HomeScreen({ navigation }) {
     <View style={{ flex: 1, alignItems: 'center' }}>
       <Text style={{ marginTop: 40, fontSize: 100 }}>🤳 👑</Text>
       <Pressable
-        style={{ ...styles.button, width: '90%', backgroundColor: '#581b98' }}
+        style={({ pressed }) => [
+          { backgroundColor: pressed ? '#a467e4' : '#581b98' },
+          { ...styles.button, width: '90%' },
+        ]}
         title="Take a Selfie"
-        onPressOut={() => navigation.navigate('Post')}>
+        onPress={() => navigation.navigate('Post')}>
         <Text style={styles.buttonText}>Take a Selfie</Text>
       </Pressable>
       <Pressable
-        style={{ ...styles.button, width: '90%', backgroundColor: '#9c1de7' }}
+        style={({ pressed }) => [
+          { backgroundColor: pressed ? '#d7a3f5' : '#9c1de7' },
+          { ...styles.button, width: '90%' },
+        ]}
         title="View Selfies"
-        onPressOut={() => navigation.navigate('View')}>
+        onPress={() => navigation.navigate('View')}>
         <Text style={styles.buttonText}>View Selfies</Text>
       </Pressable>
       <Pressable
-        style={{ ...styles.button, width: '90%', backgroundColor: '#f3558e' }}
+        style={({ pressed }) => [
+          { backgroundColor: pressed ? '#fab7d0' : '#f3558e' },
+          { ...styles.button, width: '90%' },
+        ]}
         title="About"
-        onPressOut={() => navigation.navigate('About')}>
+        onPress={() => navigation.navigate('About')}>
         <Text style={styles.buttonText}>About</Text>
       </Pressable>
     </View>
